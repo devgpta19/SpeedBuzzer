@@ -24,7 +24,8 @@ const corsOrigin = (origin: string | undefined, callback: (err: Error | null, al
   if (
     clientUrls.includes('*') ||
     clientUrls.includes(origin) ||
-    origin.endsWith('.vercel.app')
+    origin.endsWith('.vercel.app') ||
+    origin.endsWith('.onrender.com')
   ) {
     return callback(null, true);
   }
