@@ -8,6 +8,7 @@ export declare const config: {
         readonly user: string;
         readonly password: string;
         readonly database: string;
+        readonly ssl: boolean;
     };
     readonly session: {
         readonly secret: string;

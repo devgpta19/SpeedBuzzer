@@ -1,5 +1,6 @@
 import { io, Socket } from 'socket.io-client';
 import { getOrCreateDeviceId } from '../utils/device';
+import { BACKEND_URL } from '../config';
 import {
   ClientEvents,
   ServerEvents,
@@ -42,8 +43,8 @@ class SocketService {
 
     return new Promise((resolve, reject) => {
       const deviceId = getOrCreateDeviceId();
-      // Connect to origin or proxy
-      this.socket = io({
+      // Connect to specified backend URL or relative origin/proxy
+      this.socket = io(BACKEND_URL || undefined, {
         auth: { token, deviceId },
         transports: ['websocket', 'polling'],
         reconnectionAttempts: 10,

@@ -133,6 +133,7 @@ async function seed() {
       password: config.db.password,
       database: config.db.database,
       charset: 'utf8mb4',
+      ssl: config.db.ssl ? { minVersion: 'TLSv1.2', rejectUnauthorized: false } : undefined,
     },
   });
 

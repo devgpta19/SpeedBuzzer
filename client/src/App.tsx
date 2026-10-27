@@ -13,6 +13,7 @@ import { DisputeModal } from './components/DisputeModal';
 import { ServerEvents, MatchPhase } from 'speed-buzzer-shared';
 import { Loader2 } from 'lucide-react';
 import { getOrCreateDeviceId } from './utils/device';
+import { API_BASE_URL } from './config';
 
 export const App: React.FC = () => {
   const {
@@ -78,7 +79,7 @@ export const App: React.FC = () => {
         // Ensure we have a valid guest token
         if (!token) {
           const deviceId = getOrCreateDeviceId();
-          const authRes = await fetch('/api/auth/guest', {
+          const authRes = await fetch(`${API_BASE_URL}/auth/guest`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

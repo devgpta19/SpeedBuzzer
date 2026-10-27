@@ -3,16 +3,33 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
 import helmet from 'helmet';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 import { config } from './config/index.js';
 import { testConnection } from './db/connection.js';
 import { setupSocketHandlers } from './socket/handlers.js';
 import { sessionService } from './services/session.service.js';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
 const httpServer = createServer(app);
 
 // ── Middleware ──────────────────────────────────────────────
-const corsOrigin = config.isDev ? true : config.cors.clientUrl;
+const corsOrigin = (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+  if (config.isDev || !origin) return callback(null, true);
+  const clientUrls = (config.cors.clientUrl || '').split(',').map((u) => u.trim());
+  if (
+    clientUrls.includes('*') ||
+    clientUrls.includes(origin) ||
+    origin.endsWith('.vercel.app')
+  ) {
+    return callback(null, true);
+  }
+  return callback(null, false);
+};
 
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors({
@@ -126,6 +143,22 @@ app.get('/api/rooms/:joinCode', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch room info' });
   }
 });
+
+// ── Serve Frontend SPA in Production ───────────────────────
+const clientDist = path.resolve(__dirname, '../../client/dist');
+if (fs.existsSync(clientDist)) {
+  app.use(express.static(clientDist));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/socket.io')) {
+      return next();
+    }
+    const indexPath = path.resolve(clientDist, 'index.html');
+    if (fs.existsSync(indexPath)) {
+      return res.sendFile(indexPath);
+    }
+    return next();
+  });
+}
 
 // ── Server Start ───────────────────────────────────────────
 async function start() {

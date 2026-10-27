@@ -13,6 +13,7 @@ export function getDb() {
                 database: config.db.database,
                 charset: 'utf8mb4',
                 timezone: '+00:00',
+                ssl: config.db.ssl ? { minVersion: 'TLSv1.2', rejectUnauthorized: true } : undefined,
             },
             pool: {
                 min: 2,

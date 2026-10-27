@@ -23,6 +23,7 @@ import {
   DEFAULT_ROOM_SETTINGS,
 } from 'speed-buzzer-shared';
 import { getOrCreateDeviceId } from '../utils/device';
+import { API_BASE_URL } from '../config';
 
 const AVATARS = ['⚡', '🚀', '🧠', '🎯', '🐯', '🦅', '💎', '👑', '🔥', '🏆', '👾', '🌟'];
 
@@ -69,7 +70,7 @@ export const LandingPage: React.FC = () => {
     const deviceId = getOrCreateDeviceId();
     
     // Call REST API to get or refresh guest token
-    const res = await fetch('/api/auth/guest', {
+    const res = await fetch(`${API_BASE_URL}/auth/guest`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -4,9 +4,9 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Load server/.env first, then root .env if present with override
+// Load root .env then server/.env without overriding existing environment variables
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
-dotenv.config({ override: true });
+dotenv.config();
 
 export const config = {
   port: parseInt(process.env.PORT || '3001', 10),
@@ -19,6 +19,7 @@ export const config = {
     user: process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD || '',
     database: process.env.DB_NAME || 'speed_buzzer',
+    ssl: process.env.DB_SSL === 'true' || process.env.DB_SSL === '1' || (!['localhost', '127.0.0.1'].includes(process.env.DB_HOST || 'localhost') && process.env.DB_SSL !== 'false'),
   },
 
   session: {

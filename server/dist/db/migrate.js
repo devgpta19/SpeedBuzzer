@@ -4,22 +4,27 @@ import { up as up001, down as down001 } from './migrations/001_initial_schema.js
 import { up as up002, down as down002 } from './migrations/002_create_guests_table.js';
 async function migrate() {
     const direction = process.argv[2] || 'up';
-    // First, ensure the database exists
-    const rootDb = knex({
-        client: 'mysql2',
-        connection: {
-            host: config.db.host,
-            port: config.db.port,
-            user: config.db.user,
-            password: config.db.password,
-        },
-    });
-    try {
-        await rootDb.raw(`CREATE DATABASE IF NOT EXISTS \`${config.db.database}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
-        console.log(`✅ Database "${config.db.database}" ensured`);
-    }
-    finally {
-        await rootDb.destroy();
+    // If running locally, ensure database exists
+    if (['localhost', '127.0.0.1'].includes(config.db.host)) {
+        const rootDb = knex({
+            client: 'mysql2',
+            connection: {
+                host: config.db.host,
+                port: config.db.port,
+                user: config.db.user,
+                password: config.db.password,
+            },
+        });
+        try {
+            await rootDb.raw(`CREATE DATABASE IF NOT EXISTS \`${config.db.database}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+            console.log(`✅ Database "${config.db.database}" ensured`);
+        }
+        catch (e) {
+            console.warn('Database creation notice:', e.message);
+        }
+        finally {
+            await rootDb.destroy();
+        }
     }
     // Connect to the actual database
     const db = knex({
@@ -31,6 +36,7 @@ async function migrate() {
             password: config.db.password,
             database: config.db.database,
             charset: 'utf8mb4',
+            ssl: config.db.ssl ? { minVersion: 'TLSv1.2', rejectUnauthorized: true } : undefined,
         },
     });
     try {
