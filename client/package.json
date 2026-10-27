@@ -15,9 +15,7 @@
     "zustand": "^5.0.3",
     "lucide-react": "^1.16.0",
     "canvas-confetti": "^1.9.4",
-    "speed-buzzer-shared": "*"
-  },
-  "devDependencies": {
+    "speed-buzzer-shared": "*",
     "@types/node": "^22.9.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
@@ -25,5 +23,7 @@
     "@vitejs/plugin-react": "^4.3.4",
     "typescript": "^5.6.3",
     "vite": "^6.0.1"
+  },
+  "devDependencies": {
   }
 }
