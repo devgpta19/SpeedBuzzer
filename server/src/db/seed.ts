@@ -123,7 +123,51 @@ const HINDI_QUESTIONS: SeedQuestion[] = [
   { text: 'भारत की मुद्रा का क्या नाम है?', answer: 'रुपया', aliases: ['भारतीय रुपया', 'Rupee', 'Indian Rupee'], explanation: 'भारतीय रुपया (₹) भारत की आधिकारिक मुद्रा है।', category: 'current_affairs', difficulty: 'easy', language: 'hi' },
 ];
 
-async function seed() {
+export async function seedQuestions(db: knex.Knex) {
+  // Check if questions already exist
+  const existing = await db('questions').count('* as count').first();
+  if (existing && Number(existing.count) > 0) {
+    console.log(`ℹ️  Questions already seeded (${existing.count} found).`);
+    return;
+  }
+
+  const allQuestions = [...ENGLISH_QUESTIONS, ...HINDI_QUESTIONS];
+  console.log(`📝 Seeding ${allQuestions.length} built-in questions...`);
+
+  for (const q of allQuestions) {
+    const questionId = uuid();
+    const versionId = uuid();
+
+    await db.transaction(async (trx) => {
+      await trx('questions').insert({
+        id: questionId,
+        current_version: 1,
+        source_type: 'builtin',
+        status: 'approved',
+        category: q.category,
+        difficulty: q.difficulty,
+        language: q.language,
+        duplicate_fingerprint: q.text.toLowerCase().replace(/\s+/g, ' ').trim().substring(0, 200),
+      });
+
+      await trx('question_versions').insert({
+        id: versionId,
+        question_id: questionId,
+        version_number: 1,
+        question_text: q.text,
+        canonical_answer: q.answer,
+        accepted_aliases: JSON.stringify(q.aliases),
+        explanation: q.explanation,
+        source_references: JSON.stringify({ type: 'builtin_curated' }),
+        validation_metadata: JSON.stringify({ verified: true, source: 'curated' }),
+      });
+    });
+  }
+
+  console.log(`✅ Seeded ${allQuestions.length} questions successfully`);
+}
+
+export async function seed() {
   const db = knex({
     client: 'mysql2',
     connection: {
@@ -138,47 +182,7 @@ async function seed() {
   });
 
   try {
-    // Check if questions already exist
-    const existing = await db('questions').count('* as count').first();
-    if (existing && Number(existing.count) > 0) {
-      console.log(`⚠️  Questions already seeded (${existing.count} found). Skipping.`);
-      return;
-    }
-
-    const allQuestions = [...ENGLISH_QUESTIONS, ...HINDI_QUESTIONS];
-    console.log(`📝 Seeding ${allQuestions.length} built-in questions...`);
-
-    for (const q of allQuestions) {
-      const questionId = uuid();
-      const versionId = uuid();
-
-      await db.transaction(async (trx) => {
-        await trx('questions').insert({
-          id: questionId,
-          current_version: 1,
-          source_type: 'builtin',
-          status: 'approved',
-          category: q.category,
-          difficulty: q.difficulty,
-          language: q.language,
-          duplicate_fingerprint: q.text.toLowerCase().replace(/\s+/g, ' ').trim().substring(0, 200),
-        });
-
-        await trx('question_versions').insert({
-          id: versionId,
-          question_id: questionId,
-          version_number: 1,
-          question_text: q.text,
-          canonical_answer: q.answer,
-          accepted_aliases: JSON.stringify(q.aliases),
-          explanation: q.explanation,
-          source_references: JSON.stringify({ type: 'builtin_curated' }),
-          validation_metadata: JSON.stringify({ verified: true, source: 'curated' }),
-        });
-      });
-    }
-
-    console.log(`✅ Seeded ${allQuestions.length} questions successfully`);
+    await seedQuestions(db);
   } catch (error) {
     console.error('❌ Seed failed:', error);
     process.exit(1);
@@ -187,4 +191,6 @@ async function seed() {
   }
 }
 
-seed();
+if (process.argv[1] && process.argv[1].includes('seed')) {
+  seed();
+}

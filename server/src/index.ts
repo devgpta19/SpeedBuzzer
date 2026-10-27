@@ -7,7 +7,8 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { config } from './config/index.js';
-import { testConnection } from './db/connection.js';
+import { testConnection, getDb } from './db/connection.js';
+import { runMigrations } from './db/migrate.js';
 import { setupSocketHandlers } from './socket/handlers.js';
 import { sessionService } from './services/session.service.js';
 
@@ -173,6 +174,13 @@ async function start() {
     console.error('  ❌ Cannot start without database connection');
     console.error('  💡 Run: npm run migrate');
     process.exit(1);
+  }
+
+  // Ensure migrations and seed data are applied
+  try {
+    await runMigrations(getDb());
+  } catch (err) {
+    console.warn('  ⚠️ Migration notice:', err);
   }
 
   httpServer.listen(config.port, () => {

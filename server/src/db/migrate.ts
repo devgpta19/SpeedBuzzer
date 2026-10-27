@@ -1,9 +1,68 @@
-import knex from 'knex';
+import knex, { Knex } from 'knex';
 import { config } from '../config/index.js';
 import { up as up001, down as down001 } from './migrations/001_initial_schema.js';
 import { up as up002, down as down002 } from './migrations/002_create_guests_table.js';
+import { up as up003 } from './migrations/003_expand_idempotency_keys.js';
+import { up as up004 } from './migrations/004_add_ip_and_inactive_to_room_members.js';
+import { up as up005 } from './migrations/005_add_device_id_to_guests_and_members.js';
+import { seedQuestions } from './seed.js';
 
-async function migrate() {
+export async function runMigrations(db: Knex): Promise<void> {
+  console.log('⬆️  Running database migrations...');
+
+  try {
+    await up001(db);
+    console.log('✅ 001_initial_schema executed');
+  } catch (e: any) {
+    if (e.code === 'ER_TABLE_EXISTS_ERROR' || e.message?.includes('already exists')) {
+      console.log('ℹ️  001_initial_schema already applied');
+    } else {
+      console.warn('001 notice:', e.message);
+    }
+  }
+
+  try {
+    await up002(db);
+    console.log('✅ 002_create_guests_table executed');
+  } catch (e: any) {
+    if (e.code === 'ER_TABLE_EXISTS_ERROR' || e.message?.includes('already exists')) {
+      console.log('ℹ️  002_create_guests_table already applied');
+    } else {
+      console.warn('002 notice:', e.message);
+    }
+  }
+
+  try {
+    await up003(db);
+    console.log('✅ 003_expand_idempotency_keys executed');
+  } catch (e: any) {
+    console.log('ℹ️  003_expand_idempotency_keys notice:', e.message);
+  }
+
+  try {
+    await up004(db);
+    console.log('✅ 004_add_ip_and_inactive_to_room_members executed');
+  } catch (e: any) {
+    console.log('ℹ️  004_add_ip_and_inactive notice:', e.message);
+  }
+
+  try {
+    await up005(db);
+    console.log('✅ 005_add_device_id_to_guests_and_members executed');
+  } catch (e: any) {
+    console.log('ℹ️  005_add_device_id notice:', e.message);
+  }
+
+  try {
+    await seedQuestions(db);
+  } catch (e: any) {
+    console.warn('Auto-seed notice:', e.message);
+  }
+
+  console.log('✅ All migrations and seeds ready');
+}
+
+export async function migrate() {
   const direction = process.argv[2] || 'up';
 
   // If running locally, ensure database exists
@@ -49,30 +108,7 @@ async function migrate() {
       try { await down001(db); } catch (e: any) { console.warn('down001 notice:', e.message); }
       console.log('✅ Migrations rolled back');
     } else {
-      console.log('⬆️  Running migrations...');
-      try {
-        await up001(db);
-        console.log('✅ 001_initial_schema executed');
-      } catch (e: any) {
-        if (e.code === 'ER_TABLE_EXISTS_ERROR') {
-          console.log('ℹ️  001_initial_schema already applied');
-        } else {
-          throw e;
-        }
-      }
-
-      try {
-        await up002(db);
-        console.log('✅ 002_create_guests_table executed');
-      } catch (e: any) {
-        if (e.code === 'ER_TABLE_EXISTS_ERROR') {
-          console.log('ℹ️  002_create_guests_table already applied');
-        } else {
-          throw e;
-        }
-      }
-
-      console.log('✅ Migrations complete');
+      await runMigrations(db);
     }
   } catch (error: any) {
     console.error('❌ Migration failed:', error.message);
@@ -82,4 +118,6 @@ async function migrate() {
   }
 }
 
-migrate();
+if (process.argv[1] && process.argv[1].includes('migrate')) {
+  migrate();
+}
